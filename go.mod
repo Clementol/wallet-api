@@ -8,5 +8,6 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/joho/godotenv v1.4.0
 	go.mongodb.org/mongo-driver v1.8.4
-	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e
+	golang.org/x/crypto v0.0.0-20220307211146-efcb8507fb70
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 )
