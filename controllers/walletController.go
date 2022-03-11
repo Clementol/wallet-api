@@ -101,6 +101,10 @@ func SendMoney() gin.HandlerFunc {
 		var receiverWallet models.Wallet
 		var foundReceiver models.User
 
+		if err := c.Bind(&sendMoney); err != nil {
+			log.Fatal(err.Error())
+		}
+
 		userId := c.MustGet("user_id").(string)
 		// senderName := c.MustGet("first_name").(string)
 
