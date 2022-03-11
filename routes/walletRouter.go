@@ -9,6 +9,7 @@ import (
 func WalletRoutes(incomingRoutes *gin.RouterGroup) {
 
 	incomingRoutes.PUT("/fund", middleware.Authentication(), controllers.FundWallet())
+	incomingRoutes.PUT("/transfer", middleware.Authentication(), controllers.SendMoney())
 	// incomingRoutes.POST("/signin", controllers.Login())
 
 }

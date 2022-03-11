@@ -12,7 +12,6 @@ import (
 	"github.com/Clementol/Wallet/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -26,7 +25,7 @@ func FundWallet() gin.HandlerFunc {
 		var userWallet models.Wallet
 		var foundWallet models.Wallet
 		var fundWallet models.FundWallet
-		var history models.History
+		// var history models.History
 		updateObj := bson.M{}
 
 		userId := c.MustGet("user_id").(string)
@@ -34,11 +33,13 @@ func FundWallet() gin.HandlerFunc {
 		if err := c.Bind(&fundWallet); err != nil {
 			log.Fatal(err.Error())
 		}
+
 		validationErr := validate.Struct(&fundWallet)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 			return
 		}
+
 		err := userCollection.FindOne(ctx, bson.M{"user_id": userId}).Decode(&foundUser)
 		defer cancel()
 		if err != nil {
@@ -76,26 +77,6 @@ func FundWallet() gin.HandlerFunc {
 			return
 		}
 
-		// Create transaction history
-		transactionObj := bson.M{}
-		var transactions []interface{}
-		for _, transaction := range history.Transactions {
-			transaction.Amount = fundWallet.Amount
-			transaction.ID = primitive.NewObjectID()
-			transaction.Transaction_id = transaction.ID.Hex()
-			transaction.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-			transaction.From = "YOU"
-			transaction.To = "YOU"
-			transaction.Transaction_type = "CREDIT"
-			transactions = append(transactions, transaction)
-		}
-		transactionObj["transactions"] = transactions
-		updateSenderTransaction := bson.M{"$set": transactionObj}
-		filterHistory := bson.M{"user_id": userId}
-		optHis := options.FindOneAndUpdate().SetUpsert(true)
-		historyCollection.FindOneAndUpdate(ctx, filterHistory,
-			updateSenderTransaction, optHis)
-
 		updatedWalletObj := bson.M{}
 
 		walletDetails := helper.GetWalletDetails(updatedWalletObj, userWallet)
@@ -114,14 +95,14 @@ func SendMoney() gin.HandlerFunc {
 		var foundWallet models.Wallet
 		var userWallet models.Wallet
 		var foundUser models.User
-		var history models.History
+		// var history models.History
 
 		var foundReceiverWallet models.Wallet
 		var receiverWallet models.Wallet
 		var foundReceiver models.User
 
 		userId := c.MustGet("user_id").(string)
-		senderName := c.MustGet("first_name").(string)
+		// senderName := c.MustGet("first_name").(string)
 
 		if sendMoney.Amount <= 0 {
 			msg := "amount must be greater than zero"
@@ -189,27 +170,6 @@ func SendMoney() gin.HandlerFunc {
 			return
 		}
 
-		// update sender wallet history
-		transactionObj := bson.M{}
-		var transactions []interface{}
-		for _, transaction := range history.Transactions {
-			transaction.Amount = sendMoney.Amount
-			transaction.ID = primitive.NewObjectID()
-			transaction.Transaction_id = transaction.ID.Hex()
-			transaction.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-			transaction.From = senderName
-			transaction.To = foundReceiver.First_Name
-			transaction.Transaction_type = "DEBIT"
-			transactions = append(transactions, transaction)
-		}
-
-		transactionObj["transactions"] = transactions
-		updateSenderTransaction := bson.M{"$set": transactionObj}
-		filterHistory := bson.M{"user_id": userId}
-
-		historyCollection.FindOneAndUpdate(ctx, filterHistory,
-			updateSenderTransaction)
-
 		// credit receiver wallet
 		err = walletCollection.FindOne(ctx, bson.M{"user_id": sendMoney.Receiver_id}).Decode(&foundReceiverWallet)
 		defer cancel()
@@ -237,26 +197,6 @@ func SendMoney() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 			return
 		}
-
-		// update receiver wallet history
-		transactionRecObj := bson.M{}
-		var transactionsRec []interface{}
-		for _, transaction := range history.Transactions {
-			transaction.Amount = sendMoney.Amount
-			transaction.Transaction_type = "CREDIT"
-			transaction.ID = primitive.NewObjectID()
-			transaction.Transaction_id = transaction.ID.Hex()
-			transaction.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-			transaction.From = foundUser.First_Name
-			transaction.To = "YOU"
-			transactionsRec = append(transactionsRec, transaction)
-		}
-		transactionRecObj["transactions"] = transactionsRec
-		updateReceiverTransaction := bson.M{"$set": transactionRecObj}
-		filterRecHistory := bson.M{"user_id": sendMoney.Receiver_id}
-
-		historyCollection.FindOneAndUpdate(ctx, filterRecHistory,
-			updateReceiverTransaction)
 
 		c.JSON(http.StatusAccepted, receiverWallet)
 
