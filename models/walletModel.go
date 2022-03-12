@@ -13,6 +13,7 @@ type Wallet struct {
 	Created_at time.Time          `json:"created_at"`
 	Updated_at time.Time          `json:"updated_at"`
 	Wallet_id  string             `json:"wallet_id"`
+	Active     *bool              `json:"active"`
 }
 
 type FundWallet struct {

@@ -218,3 +218,53 @@ func SendMoney() gin.HandlerFunc {
 
 	}
 }
+
+func WalletStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var wallet models.Wallet
+
+		// userId := c.MustGet("user_id").(string)
+
+		if err := c.BindJSON(&wallet); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if wallet.User_id == "" {
+			msg := `User id is required`
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+			return
+		}
+		filter := bson.M{"user_id": wallet.User_id}
+		updatedWallet := bson.M{}
+
+		if wallet.Active != nil {
+
+			updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+			updateWallet := bson.M{
+				"$set": bson.M{
+					"active":     wallet.Active,
+					"updated_at": updated_at,
+				},
+			}
+			opt := options.FindOneAndUpdate().SetReturnDocument(options.After)
+			err := walletCollection.FindOneAndUpdate(ctx,
+				filter, updateWallet, opt).Decode(&updatedWallet)
+			if err != nil {
+				msg := `Unable to update user wallet`
+				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+				return
+			}
+		}
+		// updatedObj := bson.M{}
+		// GetWalletStatus()
+		wallStatus := bson.M{
+			"data":   "Wallet status updated",
+			"active": updatedWallet["active"],
+		}
+		c.JSON(http.StatusAccepted, wallStatus)
+	}
+}
