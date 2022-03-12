@@ -214,7 +214,12 @@ func SendMoney() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusAccepted, userWallet)
+		transactionObj := bson.M{
+			"message": `Transaction successfully made to ` + foundReceiver.First_Name,
+			"balance": userWallet.Balance,
+		}
+
+		c.JSON(http.StatusAccepted, transactionObj)
 
 	}
 }
@@ -262,8 +267,8 @@ func WalletStatus() gin.HandlerFunc {
 		// updatedObj := bson.M{}
 		// GetWalletStatus()
 		wallStatus := bson.M{
-			"data":   "Wallet status updated",
-			"active": updatedWallet["active"],
+			"message": "Wallet status updated",
+			"active":  updatedWallet["active"],
 		}
 		c.JSON(http.StatusAccepted, wallStatus)
 	}
