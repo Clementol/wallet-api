@@ -101,7 +101,7 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
-		msg = "Error while Authenticating"
+		msg = "Authentication Error" + err.Error()
 		return
 	}
 

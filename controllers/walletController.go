@@ -155,14 +155,21 @@ func SendMoney() gin.HandlerFunc {
 		}
 
 		// debit sender wallet
-		remainingBalance := foundWallet.Balance - sendMoney.Amount
-		userWaletObj := bson.M{}
+		// remainingBalance := foundWallet.Balance - sendMoney.Amount
+		// userWaletObj := bson.M{}
 
-		userWaletObj["balance"] = remainingBalance
-		userWaletObj["updated_at"], _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		// userWaletObj["balance"] = remainingBalance
+		updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 		filter := bson.M{"user_id": userId}
-		updateWallet := bson.M{"$set": userWaletObj}
+		updateWallet := bson.M{
+			"$inc": bson.M{
+				"balance": -sendMoney.Amount,
+			},
+			"$set": bson.M{
+				"updated_at": updated_at,
+			},
+		}
 		opt := options.FindOneAndUpdate().SetReturnDocument(options.After)
 
 		err = walletCollection.FindOneAndUpdate(ctx,
@@ -182,19 +189,24 @@ func SendMoney() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 			return
 		}
-		receiverWaletObj := bson.M{}
-		updatedReceiverBalance := foundReceiverWallet.Balance + sendMoney.Amount
+		// receiverWaletObj := bson.M{}
+		// updatedReceiverBalance := foundReceiverWallet.Balance + sendMoney.Amount
 
-		receiverWaletObj["balance"] = updatedReceiverBalance
-		receiverWaletObj["updated_at"], _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		// receiverWaletObj["balance"] = updatedReceiverBalance
+		// receiverWaletObj["updated_at"], _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 		filterReciver := bson.M{"user_id": sendMoney.Receiver_id}
-		updateReceiverWallet := bson.M{"$set": receiverWaletObj}
-		optRec := options.FindOneAndUpdate().SetReturnDocument(options.After)
+		updateReceiverWallet := bson.M{
+			"$inc": bson.M{
+				"balance": sendMoney.Amount,
+			},
+			"$set": bson.M{
+				"updated_at": updated_at,
+			},
+		}
 
 		err = walletCollection.FindOneAndUpdate(ctx,
-			filterReciver, updateReceiverWallet,
-			optRec).Decode(&receiverWallet)
+			filterReciver, updateReceiverWallet).Decode(&receiverWallet)
 
 		if err != nil {
 			msg := "Transaction not completed" + err.Error()
@@ -202,7 +214,7 @@ func SendMoney() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusAccepted, receiverWallet)
+		c.JSON(http.StatusAccepted, userWallet)
 
 	}
 }
